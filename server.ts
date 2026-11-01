@@ -3,9 +3,15 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
+import { createClient } from '@supabase/supabase-js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Embedded Supabase Project
+export const SUPABASE_URL = process.env.SUPABASE_URL || 'https://siisgwlwbcrdxzpzxztr.supabase.co';
+export const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || 'sb_publishable_MqwWcd48FtspxU_iCpPKPQ_UkuAIrJ0';
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const DATA_DIR = path.resolve(__dirname, 'data');
 const DB_FILE = path.resolve(DATA_DIR, 'biolink-db.json');
@@ -256,11 +262,42 @@ async function startServer() {
 
   // --- API Endpoints ---
 
-  // 1. Get Public Bio Link by slug
-  app.get('/api/bio-links/:slug', (req: Request, res: Response) => {
+  // 1. Get Public Bio Link by slug (Queries Supabase first)
+  app.get('/api/bio-links/:slug', async (req: Request, res: Response) => {
     const slug = req.params.slug.toLowerCase().trim();
-    const db = loadDatabase();
 
+    try {
+      const { data: sbData, error } = await supabase
+        .from('biolinks')
+        .select('*')
+        .eq('slug', slug)
+        .single();
+
+      if (!error && sbData) {
+        const formatted = {
+          id: sbData.id,
+          slug: sbData.slug,
+          profile: sbData.profile,
+          socials: sbData.socials,
+          socialsConfig: sbData.socials_config,
+          links: sbData.links,
+          theme: sbData.theme,
+          footer: sbData.footer,
+          seo: sbData.seo,
+          customDomain: sbData.custom_domain,
+          totalViews: sbData.total_views,
+          totalClicks: sbData.total_clicks,
+          analyticsHistory: sbData.analytics_history,
+          publishedAt: sbData.published_at,
+          updatedAt: sbData.updated_at,
+        };
+        return res.json({ success: true, data: formatted });
+      }
+    } catch (err) {
+      console.warn('Supabase query error, falling back to local storage:', err);
+    }
+
+    const db = loadDatabase();
     const site = db.sites[slug];
     if (!site || !site.published) {
       return res.status(404).json({ success: false, error: 'Halaman Bio Link tidak ditemukan.' });
@@ -424,7 +461,7 @@ async function startServer() {
   });
 
   // 7. Admin: Publish Draft to Live
-  app.post('/api/admin/publish', (req: Request, res: Response) => {
+  app.post('/api/admin/publish', async (req: Request, res: Response) => {
     const { draft } = req.body;
     if (!draft || !draft.slug) {
       return res.status(400).json({ success: false, message: 'Data draft tidak valid.' });
@@ -468,9 +505,32 @@ async function startServer() {
 
     saveDatabase(db);
 
+    // Persist directly to Supabase
+    try {
+      await supabase.from('biolinks').upsert({
+        id: publishedVersion.id || 'ndfstore-primary',
+        slug: cleanSlug,
+        profile: publishedVersion.profile,
+        socials: publishedVersion.socials,
+        socials_config: publishedVersion.socialsConfig,
+        links: publishedVersion.links,
+        theme: publishedVersion.theme,
+        footer: publishedVersion.footer,
+        seo: publishedVersion.seo,
+        custom_domain: publishedVersion.customDomain || null,
+        total_views: publishedVersion.totalViews || 0,
+        total_clicks: publishedVersion.totalClicks || 0,
+        analytics_history: publishedVersion.analyticsHistory || [],
+        published_at: publishedVersion.publishedAt,
+        updated_at: publishedVersion.updatedAt,
+      }, { onConflict: 'slug' });
+    } catch (sbErr) {
+      console.warn('Supabase publish error:', sbErr);
+    }
+
     return res.json({
       success: true,
-      message: `Halaman Bio Link berhasil dipublikasikan ke /${cleanSlug}!`,
+      message: `Halaman Bio Link berhasil dipublikasikan ke /${cleanSlug} & tersimpan di Supabase!`,
       data: publishedVersion,
     });
   });

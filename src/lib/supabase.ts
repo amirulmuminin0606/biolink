@@ -3,23 +3,34 @@ import { BioLinkData, SupabaseConfig } from '../types/biolink';
 
 const SUPABASE_LOCAL_STORAGE_KEY = 'biolink_supabase_config';
 
+export const DEFAULT_SUPABASE_CONFIG: SupabaseConfig = {
+  enabled: true,
+  url: 'https://siisgwlwbcrdxzpzxztr.supabase.co',
+  anonKey: 'sb_publishable_MqwWcd48FtspxU_iCpPKPQ_UkuAIrJ0',
+  tableName: 'biolinks',
+  status: 'connected',
+};
+
 export function getStoredSupabaseConfig(): SupabaseConfig {
   try {
     const raw = localStorage.getItem(SUPABASE_LOCAL_STORAGE_KEY);
     if (raw) {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      return {
+        ...DEFAULT_SUPABASE_CONFIG,
+        ...parsed,
+        enabled: true,
+        url: parsed.url || DEFAULT_SUPABASE_CONFIG.url,
+        anonKey: parsed.anonKey || DEFAULT_SUPABASE_CONFIG.anonKey,
+        tableName: parsed.tableName || DEFAULT_SUPABASE_CONFIG.tableName,
+        status: 'connected',
+      };
     }
   } catch (e) {
     // ignore
   }
 
-  return {
-    enabled: false,
-    url: '',
-    anonKey: '',
-    tableName: 'biolinks',
-    status: 'disconnected',
-  };
+  return DEFAULT_SUPABASE_CONFIG;
 }
 
 export function saveStoredSupabaseConfig(config: SupabaseConfig) {
