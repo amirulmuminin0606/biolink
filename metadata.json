@@ -1,0 +1,6 @@
+{
+  "name": "BioLink Pro - Bio Link Builder & Custom URL",
+  "description": "Platform Bio Link profesional dan customizable dengan custom slug URL, live preview real-time, manajemen link, tema, QR code, dan analitik.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
