@@ -1,8 +1,19 @@
+export interface BannerSlide {
+  id: string;
+  imageUrl: string;
+  title?: string;
+  linkUrl?: string;
+  enabled: boolean;
+}
+
 export interface ProfileConfig {
   bannerUrl: string;
   bannerHeight: number; // e.g., 180
   bannerFit: 'cover' | 'contain';
   bannerPosition: 'center' | 'top' | 'bottom';
+  bannerSlides?: BannerSlide[];
+  bannerAutoSlide?: boolean;
+  bannerSlideInterval?: number; // e.g., 4 seconds
   avatarUrl: string;
   avatarSize: number; // e.g., 100
   avatarBorderWidth: number; // e.g., 4

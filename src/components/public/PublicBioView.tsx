@@ -3,6 +3,7 @@ import { ChevronRight, BadgeCheck, Sparkles, ExternalLink } from 'lucide-react';
 import { BioLinkData, BioButtonLink } from '../../types/biolink';
 import { SocialButton } from '../common/SocialIcons';
 import { LinkLogoOrIcon } from '../common/ButtonIcons';
+import { BannerCarousel } from '../common/BannerCarousel';
 
 interface PublicBioViewProps {
   data: BioLinkData;
@@ -110,28 +111,17 @@ export const PublicBioView: React.FC<PublicBioViewProps> = ({
 
       {/* Main Content Area */}
       <div className="relative z-10 w-full flex-1 flex flex-col">
-        {/* Banner Section */}
-        {profile.bannerUrl ? (
-          <div
-            className="w-full relative overflow-hidden bg-slate-200"
-            style={{
-              height: `${profile.bannerHeight || 180}px`,
-            }}
-          >
-            <img
-              src={profile.bannerUrl}
-              alt="Store Banner"
-              className="w-full h-full"
-              style={{
-                objectFit: profile.bannerFit || 'cover',
-                objectPosition: profile.bannerPosition || 'center',
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
-          </div>
-        ) : (
-          <div className="w-full h-24 bg-gradient-to-r from-slate-200 to-slate-300" />
-        )}
+        {/* Banner Carousel Section */}
+        <BannerCarousel
+          slides={profile.bannerSlides}
+          fallbackUrl={profile.bannerUrl}
+          height={profile.bannerHeight || 180}
+          fit={profile.bannerFit || 'cover'}
+          position={profile.bannerPosition || 'center'}
+          autoSlide={profile.bannerAutoSlide ?? true}
+          interval={profile.bannerSlideInterval || 4}
+          isInteractive={!isInteractivePreview}
+        />
 
         {/* Profile Avatar & Info Card Container */}
         <div className="max-w-md mx-auto w-full px-5 flex flex-col items-center">
@@ -139,7 +129,11 @@ export const PublicBioView: React.FC<PublicBioViewProps> = ({
           <div
             className="relative z-20 rounded-full overflow-hidden shadow-xl shrink-0 transition-transform hover:scale-105 duration-200"
             style={{
-              marginTop: profile.bannerUrl ? `-${Math.round((profile.avatarSize || 100) / 2)}px` : '16px',
+              marginTop:
+                (profile.bannerSlides && profile.bannerSlides.some((s) => s.enabled && s.imageUrl)) ||
+                profile.bannerUrl
+                  ? `-${Math.round((profile.avatarSize || 100) / 2)}px`
+                  : '16px',
               width: `${profile.avatarSize || 100}px`,
               height: `${profile.avatarSize || 100}px`,
               borderWidth: `${profile.avatarBorderWidth ?? 4}px`,
